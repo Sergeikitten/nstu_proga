@@ -20,7 +20,7 @@ int main(int argc, LPTSTR argv[]) {
   SECURITY_ATTRIBUTES sa = {sizeof(SECURITY_ATTRIBUTES), NULL, TRUE};
 
   if (argc < 3) {
-    printf("There must be at least two arguments\n");
+    printf("|ERROR| There must be at least two arguments\n");
     return -1;
   }
   
@@ -31,14 +31,16 @@ int main(int argc, LPTSTR argv[]) {
   for (i = 0; i < (argc - 2); i++) {
     struct IDK buffer;
     ZeroMemory(&buffer.procInfo, sizeof(buffer.procInfo));
-    GetStartupInfo(&buffer.startInfo);
+    ZeroMemory( &buffer.startInfo, sizeof(buffer.startInfo) );
+    buffer.startInfo.cb = sizeof(STARTUPINFO);
+    //GetStartupInfo(&buffer.startInfo);
 
     CreatePipe(&buffer.forwardRead, &buffer.forwardWrite, &sa, 0);
     CreatePipe(&buffer.backwardRead, &buffer.backwardWrite, &sa, 0);
 
-    buffer.startInfo.hStdInput = buffer.forwardRead;
     buffer.startInfo.hStdError = GetStdHandle(STD_ERROR_HANDLE);
     buffer.startInfo.hStdOutput = buffer.backwardWrite;
+    buffer.startInfo.hStdInput = buffer.forwardRead;
     buffer.startInfo.dwFlags = STARTF_USESTDHANDLES;
 
     arr[i] = buffer;
@@ -47,7 +49,7 @@ int main(int argc, LPTSTR argv[]) {
                       &buffer.startInfo, &buffer.procInfo)) {
       printf("Process %lu started\n", buffer.procInfo.dwProcessId);
     } else {
-      printf("CreateProcess failed. Error: %lu\n", GetLastError());
+      printf("|ERROR| CreateProcess failed. Error: %lu\n", GetLastError());
       return -2;
     }
   }
@@ -58,7 +60,7 @@ int main(int argc, LPTSTR argv[]) {
   while (done != argc - 2) {
     for (int i = 0; i < argc - 2; i++) {
       if (ReadFile(arr[i].backwardRead, buffer, 256, &cbRead, NULL)) {
-        printf("Received command: %c\n", buffer[0]);
+        printf("SERVER received command: %c\n", buffer[0]);
         switch (buffer[0]) {
           case 'n':
             WriteFile(arr[i].forwardWrite, argv[argc - jobs],
@@ -75,28 +77,33 @@ int main(int argc, LPTSTR argv[]) {
             done++;
             break;
           default:
-            printf("Unknown command\n");
+            printf("Unknown command: %c\n", buffer[0]);
             break;
         }
       } else {
-        printf("Error reading %lu\n", GetLastError());
+        printf("|ERROR| Error reading %lu\n", GetLastError());
       }
     }
   }
 
+  //Sleep(1000);
+
   DWORD finish;
   for (i = 0; i < (argc - 2); i++) {
+    CloseHandle(arr[i].forwardWrite);
+    CloseHandle(arr[i].forwardRead);
+    //CloseHandle(arr[i].backwardWrite);
+    //CloseHandle(arr[i].backwardRead);
+    
     finish = WaitForSingleObject(arr[i].procInfo.hProcess, INFINITE);
+    printf("%x \n", finish);
     if (finish == WAIT_OBJECT_0) {
       printf("Process %lu finished his work\n", arr[i].procInfo.dwProcessId);
     } else {
-      printf("Process %lu failed his job\n", arr[i].procInfo.dwProcessId);
+      printf("Process %lu failed his job: %lu\n", arr[i].procInfo.dwProcessId, GetLastError());
       CloseHandle(arr[i].procInfo.hProcess);
       CloseHandle(arr[i].procInfo.hThread);
-      CloseHandle(arr[i].forwardWrite);
-      CloseHandle(arr[i].forwardRead);
-      CloseHandle(arr[i].backwardWrite);
-      CloseHandle(arr[i].backwardRead);
+      
       TerminateProcess(arr[i].procInfo.hProcess, 0);
     }
   }

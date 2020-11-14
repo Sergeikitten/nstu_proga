@@ -5,20 +5,11 @@
 #define BUF_SIZE 256
 #define MAX_TRIES 5000
 
-const char DLL_PATH[] = "dll/fileProcess.dll";
+const char DLL_PATH[] = "dll\\fileProcess.dll";
 const char INPUT_DIR[] = ".\\input\\";
 const char OUTPUT_DIR[] = ".\\output\\";
 
-
 int(*fileProcessing)(CHAR*, char);
-
-// void insert(char str[], char startStrign[]) {
-//   int i=0, j=0;
-//   while (startStrign[j] != '\0') {
-    
-//   }
-
-// }
 
 void generate_filenames(CHAR name[], CHAR file1[], CHAR file2[]) {
   strcpy(file1, INPUT_DIR);
@@ -54,7 +45,6 @@ int main() {
   DWORD cbWritten = 0, cbRead = 0;
   HINSTANCE hLib;
 
-  //int rCount = 0;
   char targetChar;
 
   HANDLE hIn, hOut;
@@ -68,20 +58,18 @@ int main() {
   if (make_request(hRead, hWrite, &cbWritten, &cbRead, "n", buf)) {
     return -1;
   } else {
-    fprintf(stderr, "Got name: %s\n", buf);
+    fprintf(stderr, "CLIENT received name: %s\n", buf);
   }
 
   generate_filenames((buf), inName, outName);
-  //fprintf(stderr, "IN: %s; OUT:%s \n", inName, outName);
   memset(buf, '\0', sizeof(buf));
 
   if (make_request(hRead, hWrite, &cbWritten, &cbRead, "c", buf)) {
     return -1;
   } else {
-    fprintf(stderr, "Got max changes: %s\n", buf);
+    fprintf(stderr, "CLIENT received target_char: %s\n", buf);
   }
 
-  //rCount = atoi(buf);
   targetChar = buf[0];
   memset(buf, '\0', sizeof(buf));
 
@@ -108,12 +96,11 @@ int main() {
   fileProcessing = (int (*)(CHAR*, char))GetProcAddress(
       hLib, "fileProcessing");
   if (fileProcessing == NULL) {
-    fprintf(stderr, "fileProcessing function not found");
+    fprintf(stderr, "|ERROR| fileProcessing function not found");
     return -7;
   }
 
-  //process_text
-  //int r = 0;
+  // PROCESS TEXT
   int exchanges = 0;
   while (ReadFile(hIn, buf, BUF_SIZE, &dIn, NULL) && dIn > 0) {
     //r = (*fileProcessing)(buf, outbuf, r, rCount, BUF_SIZE);

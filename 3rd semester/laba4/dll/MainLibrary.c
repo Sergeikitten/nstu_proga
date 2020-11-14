@@ -1,17 +1,5 @@
-//#include "pch.h"
 #include <windows.h> 
 #include <stdio.h> 
-//#include <iostream>
-//#include "MainLibrary.h"
-
-// #ifdef MATHLIBRARY_EXPORTS
-// #define MATHLIBRARY_API __declspec(dllexport)
-// #else
-// #define MATHLIBRARY_API __declspec(dllimport)
-// #endif
-
-
-
 
 int fileProcessing(CHAR* buf, char targetChar) {
     int exchanges = 0;
